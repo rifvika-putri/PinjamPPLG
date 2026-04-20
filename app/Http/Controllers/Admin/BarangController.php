@@ -10,89 +10,116 @@ use Illuminate\Support\Facades\File;
 
 class BarangController extends Controller
 {
-    public function index(Request $request)
+    public function index()
+{
+    // Ambil semua barang agar fitur search Alpine.js di blade bisa memfilter semuanya
+    $barangs = Barang::with('kategori')->get();
+    $kategoris = Kategori::all();
+
+    return view('admin.barang.index', compact('barangs', 'kategoris'));
+}
+
+    public function edit($id)
     {
-        $search = $request->input('search');
-        $kategoris = Kategori::all(); // Selalu ambil kategori untuk dropdown modal
-
-        if ($search) {
-            $results = Barang::with('kategori')
-                ->where('nama_barang', 'like', "%{$search}%")
-                ->orWhere('kode_barang', 'like', "%{$search}%")
-                ->get();
-
-            return view('admin.barang.index', [
-                'barangTersedia' => $results,
-                'barangDipinjam' => collect(),
-                'barangRusak'    => collect(),
-                'kategoris'      => $kategoris, // Kirim kategori agar modal tetap fungsi saat search
-                'isSearching'    => true
-            ]);
-        }
-
-        // TAB TERSEDIA: Barangnya BAIK dan sedang TIDAK DIPINJAM
-        $barangTersedia = Barang::with('kategori')
-            ->where('kondisi', 'Baik')
-            ->where('status', 'Tersedia')
-            ->get();
-
-        // TAB DIPINJAM: Barangnya sedang dibawa siswa
-        $barangDipinjam = Barang::with('kategori')
-            ->where('status', 'Dipinjam')
-            ->get();
-
-        // TAB RUSAK: Mencakup kondisi 'Rusak' DAN 'Perbaikan'
-        $barangRusak = Barang::with('kategori')
-            ->whereIn('kondisi', ['Rusak', 'Perbaikan'])
-            ->get();
-
-        return view('admin.barang.index', compact('barangTersedia', 'barangDipinjam', 'barangRusak', 'kategoris'))
-            ->with('isSearching', false);
+        $barang = Barang::findOrFail($id);
+        $kategoris = Kategori::all();
+        return view('admin.barang.edit', compact('barang', 'kategoris'));
     }
 
     public function store(Request $request)
-    {
-        $request->validate([
-            'nama_barang' => 'required',
-            'kategori_id' => 'required|exists:kategoris,id',
-            'kode_barang' => 'required|unique:barangs',
-            'foto'        => 'nullable|image|mimes:jpg,png,jpeg|max:2048',
-            'kondisi'     => 'required',
-            'stok'        => 'nullable|numeric',
-        ]);
+{
+    // 1. Tangkap kondisi dan buat hurufnya kecil semua agar sinkron dengan form
+    $kondisi = strtolower($request->kondisi);
 
-        $data = $request->all();
+    $rules = [
+        'nama_barang' => 'required',
+        'kategori_id' => 'required|exists:kategoris,id',
+        'kode_barang' => 'required|unique:barangs',
+        'lokasi'      => 'required|string', // Tambahkan lokasi
+        'foto'        => 'nullable|image|mimes:jpg,png,jpeg|max:2048',
+        'kondisi'     => 'required|in:baik,rusak,perbaikan', // Gunakan huruf kecil
+    ];
 
-        if ($request->hasFile('foto')) {
-            $file = $request->file('foto');
-            $nama_foto = time() . '.' . $file->getClientOriginalExtension();
-            $file->move(public_path('uploads/barang'), $nama_foto);
-            $data['foto'] = $nama_foto;
-        }
-
-        $data['status'] = 'Tersedia';
-
-        Barang::create($data);
-
-        return redirect()->route('barang.index')->with('success', 'Barang berhasil ditambahkan ke katalog!');
+    // 2. Validasi tambahan jika kondisi rusak
+    if ($kondisi === 'rusak') {
+        $rules['level_kerusakan'] = 'required|in:ringan,sedang,berat';
+        $rules['catatan_kerusakan'] = 'required|string|max:500';
     }
+
+    $request->validate($rules);
+
+    // 3. Siapkan data untuk disimpan
+    $data = $request->except(['foto']); // Ambil semua kecuali foto dulu
+
+    // Bersihkan catatan jika kondisinya bukan rusak
+    if ($kondisi !== 'rusak') {
+        $data['level_kerusakan'] = null;
+        $data['catatan_kerusakan'] = null;
+    }
+
+    // 4. Proses Foto
+    if ($request->hasFile('foto')) {
+        $file = $request->file('foto');
+        $nama_foto = time() . '.' . $file->getClientOriginalExtension();
+        $file->move(public_path('uploads/barang'), $nama_foto);
+        $data['foto'] = $nama_foto;
+    }
+
+    $data['status'] = 'Tersedia';
+
+    // 5. Simpan ke Database dan tampung ke variabel $barang
+    $barang = \App\Models\Barang::create($data);
+   
+    // 6. Catat Aktivitas jika berhasil
+    if ($barang) {
+        \App\Models\Aktivitas::catat(
+            "Berhasil menambah barang baru: " . $request->nama_barang, 
+            "package", 
+            "blue"
+        );
+    }
+
+    return redirect()->route('admin.barang.index')->with('success', 'Barang berhasil ditambahkan ke katalog!');
+}
 
     public function update(Request $request, $id)
     {
         $barang = Barang::findOrFail($id);
         
-        $request->validate([
+        // 1. Simpan kondisi lama sebelum di-update untuk pengecekan nanti
+        $kondisiLama = $barang->kondisi; 
+        $kondisiBaru = $request->kondisi;
+
+        $rules = [
             'nama_barang' => 'required',
             'kategori_id' => 'required|exists:kategoris,id',
-            'kondisi'     => 'required',
-        ]);
+            'kode_barang' => 'required|unique:barangs,kode_barang,' . $id,
+            'lokasi'      => 'required',
+            'deskripsi'   => 'nullable|string',
+            'kondisi'     => 'required|in:Baik,Rusak,Perbaikan',
+            'foto'        => 'nullable|image|mimes:jpg,png,jpeg|max:2048',
+        ];
+
+        if ($kondisiBaru === 'Rusak') {
+            $rules['level_kerusakan'] = 'required|in:ringan,sedang,berat';
+            $rules['catatan_kerusakan'] = 'required|string|max:500';
+        } else {
+            $rules['level_kerusakan'] = 'nullable';
+            $rules['catatan_kerusakan'] = 'nullable';
+        }
+
+        $request->validate($rules);
 
         $data = $request->except(['status', 'foto']);
 
+        if ($kondisiBaru === 'Baik') {
+            $data['level_kerusakan'] = null;
+            $data['catatan_kerusakan'] = null;
+        }
+
         if ($request->hasFile('foto')) {
-            // Hapus foto lama jika ada
-            if ($barang->foto && File::exists(public_path('uploads/barang/' . $barang->foto))) {
-                File::delete(public_path('uploads/barang/' . $barang->foto));
+            if ($barang->foto && \File::exists(public_path('uploads/barang/' . $barang->foto))) {
+                \File::delete(public_path('uploads/barang/' . $barang->foto));
             }
 
             $file = $request->file('foto');
@@ -101,9 +128,22 @@ class BarangController extends Controller
             $data['foto'] = $nama_foto;
         }
 
+        // 2. Update data barang
         $barang->update($data);
 
-        return redirect()->route('barang.index')->with('success', 'Data barang diperbarui!');
+        // 3. LOGIKA REKAP: Catat ke KondisiLog JIKA status kondisinya berubah
+        if ($kondisiLama !== $kondisiBaru) {
+            \App\Models\KondisiLog::create([
+                'barang_id'        => $barang->id,
+                'kondisi_saat_itu' => $kondisiBaru,
+                'tanggal'          => now(),
+                'catatan'          => $kondisiBaru === 'Rusak' 
+                                    ? $request->catatan_kerusakan 
+                                    : 'Update status manual oleh admin/petugas'
+            ]);
+        }
+
+        return redirect()->route('admin.barang.index')->with('success', 'Data barang berhasil diperbarui!');
     }
 
     public function destroy($id)

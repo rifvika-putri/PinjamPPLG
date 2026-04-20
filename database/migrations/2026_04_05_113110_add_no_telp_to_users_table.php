@@ -9,11 +9,12 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-    public function up(): void
+   public function up(): void
 {
     Schema::table('users', function (Blueprint $table) {
-        // Kita tambah kolom no_telp setelah email
-        $table->string('no_telp')->nullable()->after('email');
+        // Tambahkan panjang 15 karakter agar hemat memori & lebih rapi
+        // Tambahkan komentar agar orang lain tahu ini untuk format WA
+        $table->string('no_telp', 15)->nullable()->after('email')->comment('Format: 628xxx');
     });
 }
 

@@ -20,7 +20,7 @@
             <button onclick="filterTab('all')" class="tab-btn active-tab px-6 py-2 rounded-xl text-xs font-bold transition-all">Semua</button>
             <button onclick="filterTab('pending')" class="tab-btn px-6 py-2 rounded-xl text-xs font-bold text-gray-400 hover:text-gray-600 transition-all">Pending</button>
             <button onclick="filterTab('dipinjam')" class="tab-btn px-6 py-2 rounded-xl text-xs font-bold text-gray-400 hover:text-gray-600 transition-all">Sedang Dipinjam</button>
-            <button onclick="filterTab('selesai dikembalikan')" class="tab-btn px-6 py-2 rounded-xl text-xs font-bold text-gray-400 hover:text-gray-600 transition-all">Selesai</button>
+            <button onclick="filterTab('selesai')" class="tab-btn px-6 py-2 rounded-xl text-xs font-bold text-gray-400 hover:text-gray-600 transition-all">Selesai</button>
         </div>
 
         <div class="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
@@ -41,42 +41,42 @@
                         <td class="px-6 py-4">
                             <div class="text-sm font-bold text-gray-900">{{ $p->user->name }}</div>
                             <div class="text-xs text-gray-500">{{ $p->user->kelas ?? 'XII PPLG 2' }}</div>
-                            <div class="text-xs text-blue-600">{{ $p->user->no_telp ?? '-' }}</div>
+                            <div class="text-[10px] font-medium text-indigo-600 mt-1 flex items-center">
+                                <i data-lucide="phone" class="w-3 h-3 mr-1"></i>
+                                {{ $p->user->no_telp ?? '-' }}
+                            </div>
                         </td>
 
-                       <td class="px-6 py-4">
-                        <div class="flex items-center space-x-3">
-                            <div class="flex-shrink-0">
-                                @if($p->barang->foto_barang)
-                                    {{-- Gunakan Pop-up Modal juga untuk foto barang --}}
-                                    <img src="{{ asset('storage/' . $p->barang->foto_barang) }}" 
-                                        @click="showModal = true; imgSource = '{{ asset('storage/' . $p->barang->foto_barang) }}'; imgTitle = 'Detail Barang - {{ $p->barang->nama_barang }}'"
-                                        class="w-10 h-10 object-cover rounded-xl border border-gray-100 shadow-inner cursor-pointer hover:scale-105 transition"
-                                        alt="Foto Barang">
-                                @else
-                                    {{-- Placeholder jika barang tidak ada fotonya --}}
-                                    <div class="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center border border-gray-200">
-                                        <i data-lucide="package" class="w-5 h-5 text-gray-400"></i>
+                        <td class="px-6 py-4">
+                            <div class="flex items-center space-x-3">
+                                <div class="flex-shrink-0">
+                                    @if($p->barang->foto_barang)
+                                        <img src="{{ asset('storage/' . $p->barang->foto_barang) }}" 
+                                            @click="showModal = true; imgSource = '{{ asset('storage/' . $p->barang->foto_barang) }}'; imgTitle = 'Detail Barang - {{ $p->barang->nama_barang }}'"
+                                            class="w-10 h-10 object-cover rounded-xl border border-gray-100 shadow-inner cursor-pointer hover:scale-105 transition"
+                                            alt="Foto Barang">
+                                    @else
+                                        <div class="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center border border-gray-200">
+                                            <i data-lucide="package" class="w-5 h-5 text-gray-400"></i>
+                                        </div>
+                                    @endif
+                                </div>
+
+                                <div>
+                                    <div class="text-sm font-bold text-gray-900 leading-tight">
+                                        {{ $p->barang->nama_barang }}
                                     </div>
-                                @endif
-                            </div>
-
-
-                            <div>
-                                <div class="text-sm font-bold text-gray-900 leading-tight">
-                                    {{ $p->barang->nama_barang }}
-                                </div>
-                                <div class="flex items-center space-x-1.5 mt-0.5">
-                                    <span class="px-1.5 py-0.5 text-[10px] bg-gray-50 border border-gray-100 rounded-md text-gray-500 font-mono tracking-tighter">
-                                        {{ $p->barang->kode_barang }}
-                                    </span>
-                                    <span class="text-[10px] font-medium {{ $p->kondisi_pinjam == 'baik' ? 'text-green-600' : 'text-amber-600' }}">
-                                        Cond: {{ $p->kondisi_pinjam }}
-                                    </span>
+                                    <div class="flex items-center space-x-1.5 mt-0.5">
+                                        <span class="px-1.5 py-0.5 text-[10px] bg-gray-50 border border-gray-100 rounded-md text-gray-500 font-mono tracking-tighter">
+                                            {{ $p->barang->kode_barang }}
+                                        </span>
+                                        <span class="text-[10px] font-medium {{ $p->kondisi_pinjam == 'baik' ? 'text-green-600' : 'text-amber-600' }}">
+                                            Cond: {{ $p->kondisi_pinjam }}
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    </td>
+                        </td>
 
                         <td class="px-6 py-4">
                             <div class="flex items-center justify-center space-x-3">
@@ -110,21 +110,46 @@
                         <td class="px-6 py-4">
                             <span class="px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-tighter
                                 {{ $p->status == 'pending' ? 'bg-amber-100 text-amber-600 border border-amber-200' : 
-                                   ($p->status == 'dipinjam' ? 'bg-blue-100 text-blue-600 border border-blue-200' : 
-                                   ($p->status == 'menunggu verifikasi' ? 'bg-purple-100 text-purple-600 border border-purple-200 animate-pulse' : 'bg-emerald-100 text-emerald-600 border border-emerald-200')) }}">
+                                    ($p->status == 'dipinjam' ? 'bg-blue-100 text-blue-600 border border-blue-200' : 
+                                    ($p->status == 'menunggu verifikasi' ? 'bg-purple-100 text-purple-600 border border-purple-200 animate-pulse' : 'bg-emerald-100 text-emerald-600 border border-emerald-200')) }}">
                                 {{ $p->status }}
                             </span>
                         </td>
 
                         <td class="px-6 py-4 text-right">
-                            @if($p->status == 'pending')
-                                <form action="{{ route('peminjaman.setujui', $p->id) }}" method="POST">
-                                    @csrf
-                                    <button class="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-xl text-[10px] font-bold shadow-md shadow-emerald-100 transition-all">SETUJUI</button>
-                                </form>
-                            @elseif($p->status == 'menunggu verifikasi')
-                                <button onclick="confirmSelesai({{ $p->id }})" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-[10px] font-bold shadow-md shadow-indigo-100 transition-all">VERIFIKASI</button>
-                            @endif
+                            <div class="flex items-center justify-end gap-2">
+                                {{-- LOGIKA LINK WHATSAPP --}}
+                                @if($p->status != 'selesai')
+                                    @php
+                                        $no_hp = preg_replace('/[^0-9]/', '', $p->user->no_telp);
+                                        if (str_starts_with($no_hp, '0')) { $no_hp = '62' . substr($no_hp, 1); }
+
+                                        $pesan = "Halo " . $p->user->name . ",\n\n" .
+                                                 "Ini pengingat dari *Sisapras* untuk barang:\n" .
+                                                 "- *Barang:* " . $p->barang->nama_barang . "\n" .
+                                                 "- *Kode:* " . $p->barang->kode_barang . "\n" .
+                                                 "- *Harus Kembali:* " . \Carbon\Carbon::parse($p->tanggal_kembali_rencana)->format('d/m/Y H:i') . " WIB\n\n" .
+                                                 "Mohon segera dikembalikan jika sudah selesai ya. Terima kasih!";
+                                        
+                                        $waUrl = "https://wa.me/" . $no_hp . "?text=" . urlencode($pesan);
+                                    @endphp
+
+                                    <a href="{{ $waUrl }}" target="_blank"
+                                       class="flex items-center bg-emerald-100 hover:bg-emerald-200 text-emerald-700 px-3 py-2 rounded-xl text-[10px] font-bold transition-all border border-emerald-200">
+                                        <i data-lucide="message-circle" class="w-3.5 h-3.5 mr-1"></i>
+                                        WA NOTIF
+                                    </a>
+                                @endif
+
+                                @if($p->status == 'pending')
+                                    <form action="{{ route('peminjaman.setujui', $p->id) }}" method="POST">
+                                        @csrf
+                                        <button class="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-xl text-[10px] font-bold shadow-md shadow-emerald-100 transition-all">SETUJUI</button>
+                                    </form>
+                                @elseif($p->status == 'menunggu verifikasi')
+                                    <button onclick="confirmSelesai({{ $p->id }})" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-[10px] font-bold shadow-md shadow-indigo-100 transition-all">VERIFIKASI</button>
+                                @endif
+                            </div>
                         </td>
                     </tr>
                     @empty
@@ -134,6 +159,7 @@
             </table>
         </div>
 
+        {{-- Modal Preview Foto --}}
         <div x-show="showModal" 
              class="fixed inset-0 z-[999] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
              x-transition:enter="transition ease-out duration-300"
@@ -158,7 +184,9 @@
             </div>
         </div>
 
-    </div> <style>
+    </div> 
+    
+    <style>
         .active-tab {
             background: white;
             color: #4f46e5;

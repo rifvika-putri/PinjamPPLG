@@ -17,8 +17,8 @@ class DashboardController extends Controller
         $jumlahPetugas = User::where('role', 'petugas')->count();
         $jumlahSiswa = User::where('role', 'siswa')->count();
         $pinjamanAktif = Peminjaman::where('status', 'dipinjam')->count();
-
-        return view('admin.dashboard', compact('jumlahBarang', 'jumlahPetugas', 'jumlahSiswa', 'pinjamanAktif'));
+        $aktivitasTerakhir = \App\Models\Aktivitas::latest()->get();
+        return view('admin.dashboard', compact('jumlahBarang', 'jumlahPetugas', 'jumlahSiswa', 'pinjamanAktif', 'aktivitasTerakhir'));
     }
 
     // DASHBOARD PETUGAS

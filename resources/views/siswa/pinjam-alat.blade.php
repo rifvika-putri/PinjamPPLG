@@ -26,64 +26,104 @@
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-8">
-                @forelse($barangs as $item)
-                    <div 
-                        x-show="search === '' || '{{ strtolower($item->nama_barang) }}'.includes(search.toLowerCase()) || '{{ strtolower($item->kategori) }}'.includes(search.toLowerCase())"
-                        x-transition:enter="transition ease-out duration-300" 
-                        x-transition:enter-start="opacity-0 transform scale-95"
-                        class="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 overflow-hidden hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 group"
+           <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-8">
+    @forelse($barangs as $item)
+        @php
+            // Logika pengecekan ketersediaan
+            $isDipinjam = $item->status === 'dipinjam';
+            $isRusak = $item->level_kerusakan === 'berat' || $item->status === 'rusak';
+            $canPinjam = !$isDipinjam && !$isRusak;
+        @endphp
+
+        <div 
+            x-show="search === '' || '{{ strtolower($item->nama_barang) }}'.includes(search.toLowerCase()) || '{{ strtolower($item->kategori->nama_kategori ?? '') }}'.includes(search.toLowerCase())"
+            x-transition:enter="transition ease-out duration-300" 
+            x-transition:enter-start="opacity-0 transform scale-95"
+            class="group relative bg-white rounded-[2.5rem] shadow-sm border border-gray-100 overflow-hidden hover:shadow-2xl hover:-translate-y-2 transition-all duration-500"
+        >
+            <div class="relative aspect-[4/3] bg-gray-100 overflow-hidden">
+                @if($item->foto)
+                    <img src="{{ asset('uploads/barang/' . $item->foto) }}" 
+                         class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 {{ !$canPinjam ? 'grayscale contrast-125 opacity-70' : '' }}">
+                @else
+                    <div class="w-full h-full flex flex-col items-center justify-center text-gray-300 bg-gray-50">
+                        <i data-lucide="package" class="w-12 h-12 mb-2"></i>
+                        <span class="text-[10px] italic font-medium tracking-widest uppercase">No Image</span>
+                    </div>
+                @endif
+
+                @if(!$canPinjam)
+                    <div class="absolute inset-0 bg-black/40 backdrop-blur-[2px] flex items-center justify-center p-4">
+                        <div class="bg-white/90 px-4 py-2 rounded-2xl shadow-xl transform -rotate-3">
+                            <span class="text-[11px] font-black uppercase tracking-widest {{ $isRusak ? 'text-rose-600' : 'text-amber-600' }}">
+                                {{ $isRusak ? '⚠️ Rusak Berat' : '⏳ Sedang Dipinjam' }}
+                            </span>
+                        </div>
+                    </div>
+                @endif
+
+                <div class="absolute top-4 right-4">
+                    <span class="px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-tighter shadow-md {{ $canPinjam ? 'bg-emerald-500 text-white' : 'bg-gray-400 text-white' }}">
+                        {{ $canPinjam ? 'Tersedia' : 'Non-Aktif' }}
+                    </span>
+                </div>
+            </div>
+
+            <div class="p-6">
+                <div class="flex justify-between items-start mb-1">
+                    <p class="text-[10px] font-black text-indigo-600 uppercase tracking-[0.2em]">
+                        {{ $item->kategori->nama_kategori ?? 'Umum' }}
+                    </p>
+                </div>
+
+                <h4 class="font-bold text-gray-800 text-lg leading-tight mb-1 group-hover:text-indigo-600 transition-colors">
+                    {{ $item->nama_barang }}
+                </h4>
+                
+                <div class="flex items-center gap-2 mb-4">
+                    <span class="text-[11px] text-gray-400 font-mono tracking-wider">{{ $item->kode_barang }}</span>
+                    <span class="w-1 h-1 bg-gray-300 rounded-full"></span>
+                    <span class="text-[10px] font-bold {{ $item->kondisi == 'Baik' ? 'text-emerald-500' : 'text-rose-500' }}">
+                         Kondisi: {{ $item->kondisi }}
+                    </span>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3 mt-4 pt-4 border-t border-gray-50">
+                    <button 
+                        @click="selectedBarang = {{ json_encode($item) }}; showForm = false"
+                        class="flex items-center justify-center gap-2 bg-gray-50 hover:bg-gray-100 text-gray-600 py-3 rounded-2xl text-[11px] font-bold transition-all active:scale-95 border border-gray-100"
                     >
-                        <div class="relative aspect-[4/3] bg-gray-100 overflow-hidden">
-                            @if($item->foto)
-                                <img src="{{ asset('uploads/barang/' . $item->foto) }}" class="w-full h-full object-cover">
-                            @else
-                                <div class="w-full h-full flex flex-col items-center justify-center text-gray-300 bg-gray-50">
-                                    <i data-lucide="package" class="w-12 h-12 mb-2"></i>
-                                    <span class="text-[10px] italic font-medium tracking-widest uppercase">No Image</span>
-                                </div>
-                            @endif
+                        <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+                        Detail
+                    </button>
 
-                            <div class="absolute top-4 right-4">
-                                <span class="px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-tighter shadow-sm {{ $item->status == 'tersedia' ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white' }}">
-                                    {{ $item->status }}
-                                </span>
-                            </div>
-                        </div>
-
-                        <div class="p-6">
-                            <p class="text-[10px] font-black text-indigo-600 uppercase tracking-[0.2em] mb-1">{{ $item->kategori->nama_kategori ?? 'Tanpa Kategori' }}</p>
-                            <h4 class="font-bold text-gray-800 text-lg leading-tight mb-1 group-hover:text-indigo-600 transition-colors">
-                                {{ $item->nama_barang }}
-                            </h4>
-                            <p class="text-[11px] text-gray-400 font-mono tracking-wider mb-4">{{ $item->kode_barang }}</p>
-
-                            <div class="grid grid-cols-2 gap-3 mt-4 pt-4 border-t border-gray-50">
-                                <button 
-                                    @click="selectedBarang = {{ json_encode($item) }}; showForm = false"
-                                    class="flex items-center justify-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 rounded-2xl text-[11px] font-bold transition-all active:scale-95"
-                                >
-                                    <i data-lucide="eye" class="w-3.5 h-3.5"></i>
-                                    Detail
-                                </button>
-
-                                <button 
-                                    @click="selectedBarang = {{ json_encode($item) }}; showForm = true"
-                                    class="flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-2xl text-[11px] font-bold shadow-lg shadow-indigo-100 transition-all active:scale-95">
-                                    <i data-lucide="plus-circle" class="w-3.5 h-3.5 text-indigo-200"></i>
-                                    Pinjam
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                @empty
-                    <div class="col-span-full py-20 text-center bg-white rounded-[3rem] border border-dashed border-gray-200">
-                        <i data-lucide="search-x" class="w-12 h-12 text-gray-300 mx-auto mb-4"></i>
-                        <p class="text-gray-400 font-medium italic">Belum ada alat praktik yang bisa ditampilkan.</p>
-                    </div>
-                @endforelse
+                    @if($canPinjam)
+                        <button 
+                            @click="selectedBarang = {{ json_encode($item) }}; showForm = true"
+                            class="flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-2xl text-[11px] font-bold shadow-lg shadow-indigo-100 transition-all active:scale-95"
+                        >
+                            <i data-lucide="plus-circle" class="w-3.5 h-3.5 text-indigo-200"></i>
+                            Pinjam
+                        </button>
+                    @else
+                        <button 
+                            disabled
+                            class="flex items-center justify-center gap-2 bg-gray-100 text-gray-400 py-3 rounded-2xl text-[11px] font-bold cursor-not-allowed opacity-60"
+                        >
+                            <i data-lucide="lock" class="w-3.5 h-3.5"></i>
+                            Lock
+                        </button>
+                    @endif
+                </div>
             </div>
         </div>
+    @empty
+        <div class="col-span-full py-20 text-center bg-white rounded-[3rem] border border-dashed border-gray-200">
+            <i data-lucide="search-x" class="w-12 h-12 text-gray-300 mx-auto mb-4"></i>
+            <p class="text-gray-400 font-medium italic">Belum ada alat praktik yang bisa ditampilkan.</p>
+        </div>
+    @endforelse
+</div>
 
         <template x-if="selectedBarang && !showForm">
             <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto" @click.self="selectedBarang = null">
@@ -172,6 +212,9 @@
                                 <h4 class="font-bold text-slate-800 text-sm" x-text="selectedBarang.nama_barang"></h4>
                                 <div class="flex flex-wrap gap-2 mt-1">
                                     <span class="text-[9px] font-mono text-indigo-600 bg-white px-2 py-0.5 rounded-md border border-indigo-100" x-text="selectedBarang.kode_barang"></span>
+                                    <template x-if="selectedBarang.level_kerusakan">
+                                        <span class="text-[9px] font-bold px-2 py-0.5 rounded-full" :class="selectedBarang.level_kerusakan === 'ringan' ? 'bg-green-100 text-green-700' : selectedBarang.level_kerusakan === 'sedang' ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'" x-text="'Kerusakan: ' + selectedBarang.level_kerusakan.toUpperCase()"></span>
+                                    </template>
                                     <span class="text-[9px] font-bold text-emerald-600 uppercase" x-text="'Kondisi: ' + selectedBarang.kondisi"></span>
                                 </div>
                             </div>

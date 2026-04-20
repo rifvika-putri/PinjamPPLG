@@ -1,3 +1,44 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer components {
+    /* Animasi Hover Menu */
+    .nav-item {
+        @apply flex items-center p-3 rounded-2xl transition-all duration-500 relative overflow-hidden;
+    }
+    
+    .nav-item:hover {
+        @apply bg-white/10 translate-x-2;
+    }
+
+    /* Efek Glow untuk Menu Aktif */
+    .active-glow {
+        box-shadow: 0 0 20px rgba(59, 130, 246, 0.4);
+    }
+
+    /* Scrollbar Halus */
+    .custom-scrollbar::-webkit-scrollbar {
+        width: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+        @apply bg-slate-700 rounded-full;
+    }
+}
+
+/* Animasi Fade In untuk halaman */
+@keyframes slideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-main {
+    animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+    .dashboard-card {
+        @apply bg-white p-6 rounded-[2rem] border border-gray-100 transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl hover:shadow-indigo-100/50;
+    }
+    
+    .icon-box {
+        @apply p-4 rounded-2xl transition-transform duration-500 group-hover:scale-110 group-hover:rotate-6;
+    }

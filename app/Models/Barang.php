@@ -20,6 +20,8 @@ public function kategori()
     'kategori_id', 
     'lokasi', 
     'kondisi', 
+    'level_kerusakan',
+    'catatan_kerusakan',
     'deskripsi', 
     'status' // Status ini otomatis (Tersedia/Dipinjam/Rusak)
 ];

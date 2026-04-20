@@ -17,42 +17,61 @@ class PetugasController extends Controller
     }
 
     public function store(Request $request)
-    {
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:8',
-            'role' => 'required'
-        ]);
+{
+    $request->validate([
+        'name' => 'required|string|max:255',
+        'email' => 'required|string|email|max:255|unique:users',
+        'password' => 'required|string|min:8',
+        'role' => 'required',
+        // Update validasi agar sesuai dengan input baru di form
+        'hari' => 'required|array',
+        'jam_mulai' => 'required',
+        'jam_selesai' => 'required'
+    ]);
 
-        User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'role' => $request->role,
-        ]);
+    // Gabungkan array hari: ["Senin", "Rabu"] jadi "Senin, Rabu"
+    $daftarHari = implode(', ', $request->hari);
 
-        return redirect()->back()->with('success', 'Petugas berhasil ditambahkan!');
-    }
+    // GABUNGKAN DATA: Menjadi format "Senin (08:00 - 14:00)"
+    $jadwalGabungan = $daftarHari . ' (' . $request->jam_mulai . ' - ' . $request->jam_selesai . ')';
+
+    User::create([
+        'name' => $request->name,
+        'email' => $request->email,
+        'password' => Hash::make($request->password),
+        'role' => $request->role,
+        'jadwal_kerja' => $jadwalGabungan, // Simpan hasil gabungan ke kolom tunggal
+    ]);
+
+    return redirect()->back()->with('success', 'Petugas berhasil ditambahkan!');
+}
 
     public function update(Request $request, $id)
     {
-        $user = User::findOrFail($id);
-        
         $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email,'.$id,
+            'name' => 'required',
+            'email' => 'required|email|unique:users,email,' . $id,
+            'role' => 'required',
+            'hari' => 'required|array', // Menerima checkbox hari
+            'jam_mulai' => 'required',
+            'jam_selesai' => 'required',
         ]);
 
-        $user->name = $request->name;
-        $user->email = $request->email;
-        if($request->password) {
-            $user->password = Hash::make($request->password);
-        }
-        $user->role = $request->role;
-        $user->save();
+        $petugas = User::findOrFail($id);
+        
+        // Gabungkan hari menjadi string (misal: "Senin, Selasa")
+        $hariString = implode(', ', $request->hari);
+        // Format jadwal kerja: "Senin, Selasa (08:00 - 15:00)"
+        $jadwalLengkap = $hariString . " (" . $request->jam_mulai . " - " . $request->jam_selesai . ")";
 
-        return redirect()->back()->with('success', 'Data petugas diperbarui!');
+        $petugas->update([
+            'name' => $request->name,
+            'email' => $request->email,
+            'role' => $request->role,
+            'jadwal_kerja' => $jadwalLengkap, // Simpan ke kolom jadwal_kerja yang ada di DB
+        ]);
+
+        return redirect()->back()->with('success', 'Data petugas berhasil diperbarui!');
     }
 
     public function destroy($id)

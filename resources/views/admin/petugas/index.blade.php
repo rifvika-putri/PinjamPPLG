@@ -1,169 +1,361 @@
 <x-app-layout>
-    <x-slot name="header">Data Petugas & Admin</x-slot>
+    <x-slot name="header">
+        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+            Data Petugas & Admin
+        </h2>
+    </x-slot>
 
-    <div class="bg-white rounded-3xl shadow-sm border border-gray-50 overflow-hidden">
-        <div class="p-8 border-b border-gray-50 flex justify-between items-center">
-            <div>
-                <h3 class="text-xl font-bold text-[#272b34]">Daftar Pengguna Sistem</h3>
-                <p class="text-sm text-gray-400">Manajemen akun Admin dan Petugas PPLG</p>
+    <div class="py-12 bg-[#f8fafc]">
+        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+            
+            {{-- Header Section --}}
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-8 gap-4">
+                <div>
+                    <h3 class="text-2xl font-bold text-gray-900">Daftar Pengguna Sistem</h3>
+                    <p class="text-sm text-gray-500 mt-1">Manajemen akun Admin dan Petugas untuk sistem BarangSekolah.</p>
+                </div>
+                <button onclick="openModal('modalTambah')" 
+                        class="inline-flex items-center justify-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-2xl transition-all duration-300 shadow-lg shadow-blue-200 group">
+                    <i data-lucide="user-plus" class="w-5 h-5 mr-2 group-hover:scale-110 transition-transform"></i>
+                    Tambah Petugas Baru
+                </button>
             </div>
-            <button onclick="openModal('modalTambah')" 
-                    class="bg-[#2f77dd] hover:bg-[#7c4dc2] text-white px-6 py-3 rounded-xl font-bold transition flex items-center shadow-lg shadow-blue-500/20">
-                <i data-lucide="user-plus" class="w-5 h-5 mr-2"></i>
-                Tambah Petugas
-            </button>
-        </div>
 
-        <div class="overflow-x-auto p-4">
-            <table class="w-full text-left border-separate border-spacing-y-2">
-                <thead>
-                    <tr class="text-[#272b34] uppercase text-[11px] tracking-widest font-extrabold">
-                        <th class="px-6 py-4">Nama</th>
-                        <th class="px-6 py-4">Email</th>
-                        <th class="px-6 py-4 text-center">Role</th>
-                        <th class="px-6 py-4 text-right">Aksi</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse($petugas as $p)
-                    <tr class="bg-gray-50 hover:bg-white hover:shadow-md transition rounded-2xl overflow-hidden">
-                        <td class="px-6 py-4 font-bold text-[#272b34]">{{ $p->name }}</td>
-                        <td class="px-6 py-4 text-gray-500">{{ $p->email }}</td>
-                        <td class="px-6 py-4 text-center">
-                            <span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase {{ $p->role == 'admin' ? 'bg-[#7c4dc2]/10 text-[#7c4dc2]' : 'bg-[#2f77dd]/10 text-[#2f77dd]' }}">
-                                {{ $p->role }}
-                            </span>
-                        </td>
-                        <td class="px-6 py-4 text-right flex justify-end space-x-2">
-                            <button onclick="openEditModal({{ $p->id }}, '{{ $p->name }}', '{{ $p->email }}', '{{ $p->role }}')" 
-                                    class="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition">
-                                <i data-lucide="edit-3" class="w-4 h-4"></i>
-                            </button>
-                            
-                            <form action="{{ route('petugas.destroy', $p->id) }}" method="POST" onsubmit="return confirm('Hapus petugas ini?')">
-                                @csrf @method('DELETE')
-                                <button type="submit" class="p-2 text-red-500 hover:bg-red-50 rounded-lg transition">
-                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
-                                </button>
-                            </form>
-                        </td>
-                    </tr>
-                    @empty
-                    <tr>
-                        <td colspan="4" class="text-center py-10 text-gray-400 font-medium italic">Belum ada data petugas.</td>
-                    </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-    <div id="modalTambah" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[99] p-4">
-        <div class="bg-white p-8 rounded-3xl w-full max-w-md shadow-2xl border border-gray-100">
-            <h3 class="text-xl font-bold mb-6 text-[#272b34]">Tambah Petugas Baru</h3>
-            <form action="{{ route('petugas.store') }}" method="POST" class="space-y-4" autocomplete="off">
-                @csrf
-                <input autocomplete="false" name="hidden" type="text" style="display:none;">
+            {{-- Table Section --}}
+            <div class="bg-white rounded-[2rem] shadow-xl shadow-gray-200/50 border border-gray-100 overflow-hidden">
                 
+                <div class="p-6 border-b border-gray-50 bg-white/50 backdrop-blur-sm flex flex-col sm:flex-row justify-between items-center gap-4">
+                    <div class="relative w-full sm:w-80">
+                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
+                            <i data-lucide="search" class="w-4 h-4"></i>
+                        </span>
+                        <input type="text" id="searchInput" onkeyup="searchTable()" placeholder="Cari nama atau email..." 
+                               class="block w-full pl-10 pr-4 py-2.5 border-none bg-gray-50 rounded-xl text-sm focus:ring-2 focus:ring-blue-500/20 transition-all placeholder:text-gray-400 font-medium">
+                    </div>
+                    <div class="text-sm font-bold text-blue-600 bg-blue-50 px-4 py-2 rounded-lg">
+                        {{ $petugas->count() }} Total Pengguna
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto p-4">
+                    <table class="w-full text-left border-separate border-spacing-y-3" id="petugasTable">
+                        <thead>
+                            <tr class="text-gray-400 uppercase text-[11px] tracking-[0.15em] font-black">
+                                <th class="px-6 py-3">Nama & Kontak</th>
+                                <th class="px-6 py-3">Jadwal Kerja</th>
+                                <th class="px-6 py-3 text-center">Akses Role</th>
+                                <th class="px-6 py-3 text-right">Tindakan</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($petugas as $p)
+                            <tr class="group hover:translate-y-[-2px] transition-all duration-300">
+                                <td class="px-6 py-4 bg-gray-50/50 group-hover:bg-white group-hover:shadow-md rounded-l-2xl border-y border-l border-transparent group-hover:border-gray-100 transition-all">
+                                    <div class="flex items-center gap-4">
+                                        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-sm shadow-md">
+                                            {{ strtoupper(substr($p->name, 0, 2)) }}
+                                        </div>
+                                        <div>
+                                            <div class="font-bold text-gray-800">{{ $p->name }}</div>
+                                            <div class="text-[11px] text-gray-400 font-medium">{{ $p->email }}</div>
+                                        </div>
+                                    </div>
+                                </td>
+
+                                <td class="px-6 py-4 bg-gray-50/50 group-hover:bg-white group-hover:shadow-md border-y border-transparent group-hover:border-gray-100 transition-all text-sm font-semibold text-gray-600">
+                                    <div class="flex items-center gap-2">
+                                        <i data-lucide="calendar" class="w-3.5 h-3.5 text-blue-400"></i>
+                                        {{ $p->jadwal_kerja ?? 'Belum Diatur' }}
+                                    </div>
+                                </td>
+
+                                <td class="px-6 py-4 bg-gray-50/50 group-hover:bg-white group-hover:shadow-md border-y border-transparent group-hover:border-gray-100 transition-all text-center">
+                                    @if($p->role == 'admin')
+                                        <span class="px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider bg-purple-50 text-purple-600 border border-purple-100">ADMIN</span>
+                                    @else
+                                        <span class="px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider bg-blue-50 text-blue-600 border border-blue-100">PETUGAS</span>
+                                    @endif
+                                </td>
+
+                                <td class="px-6 py-4 bg-gray-50/50 group-hover:bg-white group-hover:shadow-md rounded-r-2xl border-y border-r border-transparent group-hover:border-gray-100 transition-all text-right">
+                                    <div class="flex justify-end gap-2">
+                                        <button type="button" onclick="showDetail('{{ $p->name }}', '{{ $p->email }}', '{{ $p->role }}', '{{ $p->jadwal_kerja }}')" 
+                                                class="p-2.5 text-emerald-500 hover:bg-emerald-50 rounded-xl transition-colors">
+                                            <i data-lucide="eye" class="w-4 h-4"></i>
+                                        </button>
+
+                                        <button type="button" onclick="openEditModal('{{ url('admin/petugas') }}/{{ $p->id }}', '{{ $p->name }}', '{{ $p->email }}', '{{ $p->role }}', '{{ $p->jadwal_kerja }}')" 
+                                                class="p-2.5 text-blue-500 hover:bg-blue-50 rounded-xl transition-colors">
+                                            <i data-lucide="edit-3" class="w-4 h-4"></i>
+                                        </button>
+
+                                        <form action="{{ route('petugas.destroy', $p->id) }}" method="POST" class="inline" onsubmit="return confirm('Hapus pengguna ini?')">
+                                            @csrf @method('DELETE')
+                                            <button type="submit" class="p-2.5 text-red-500 hover:bg-red-50 rounded-xl transition-colors">
+                                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                            @empty
+                            <tr>
+                                <td colspan="4" class="py-20 text-center text-gray-400 italic font-medium">Data tidak ditemukan.</td>
+                            </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Error Notifications --}}
+    @if ($errors->any())
+        <div class="fixed bottom-4 right-4 z-[10000] w-80">
+            <div class="bg-red-50 border-l-4 border-red-400 p-4 rounded-xl shadow-lg">
+                <ul class="text-sm text-red-600 list-disc list-inside">
+                    @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        </div>
+    @endif
+
+    {{-- MODAL TAMBAH --}}
+    <div id="modalTambah" class="hidden fixed inset-0 z-[9999] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-[2.5rem] w-full max-w-md overflow-hidden shadow-2xl transition-all">
+            <div class="bg-blue-600 p-6 text-white flex justify-between items-center">
+                <h3 class="font-bold text-lg">Tambah Petugas Baru</h3>
+                <button onclick="closeModal('modalTambah')" class="text-white hover:opacity-70 text-2xl">&times;</button>
+            </div>
+            
+            <form action="{{ route('petugas.store') }}" method="POST" class="p-8 space-y-4">
+                @csrf
+                
+                {{-- Nama --}}
                 <div>
-                    <label class="text-xs font-bold text-gray-400 uppercase ml-1 tracking-wider">Nama Lengkap</label>
-                    <input type="text" name="name" class="w-full border-gray-100 rounded-xl bg-gray-50 p-3 mt-1 focus:ring-2 focus:ring-[#2f77dd] focus:bg-white outline-none transition" required>
+                    <label class="block text-[10px] font-black text-gray-400 uppercase mb-2 tracking-widest">Nama Lengkap</label>
+                    <input type="text" name="name" required class="w-full bg-gray-50 border-none rounded-2xl py-3 px-4 text-sm focus:ring-2 focus:ring-blue-500/20 font-semibold">
                 </div>
+
+                {{-- Email --}}
                 <div>
-                    <label class="text-xs font-bold text-gray-400 uppercase ml-1 tracking-wider">Email Address</label>
-                    <input type="email" name="email" class="w-full border-gray-100 rounded-xl bg-gray-50 p-3 mt-1 focus:ring-2 focus:ring-[#2f77dd] focus:bg-white outline-none transition" required autocomplete="off">
+                    <label class="block text-[10px] font-black text-gray-400 uppercase mb-2 tracking-widest">Email</label>
+                    <input type="email" name="email" required class="w-full bg-gray-50 border-none rounded-2xl py-3 px-4 text-sm focus:ring-2 focus:ring-blue-500/20 font-semibold">
                 </div>
+
+                {{-- Password & Role --}}
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-[10px] font-black text-gray-400 uppercase mb-2 tracking-widest">Password</label>
+                        <input type="password" name="password" required class="w-full bg-gray-50 border-none rounded-2xl py-3 px-4 text-sm focus:ring-2 focus:ring-blue-500/20 font-semibold">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-black text-gray-400 uppercase mb-2 tracking-widest">Role</label>
+                        <select name="role" class="w-full bg-gray-50 border-none rounded-2xl py-3 px-4 text-sm focus:ring-2 focus:ring-blue-500/20 font-semibold">
+                            <option value="petugas">Petugas</option>
+                            <option value="admin">Admin</option>
+                        </select>
+                    </div>
+                </div>
+
+                {{-- Hari Tugas (Checkbox) --}}
                 <div>
-                    <label class="text-xs font-bold text-gray-400 uppercase ml-1 tracking-wider">Password</label>
-                    <input type="password" name="password" class="w-full border-gray-100 rounded-xl bg-gray-50 p-3 mt-1 focus:ring-2 focus:ring-[#2f77dd] focus:bg-white outline-none transition" required autocomplete="new-password">
+                    <label class="block text-[10px] font-black text-gray-400 uppercase mb-2 tracking-widest">Hari Tugas</label>
+                    <div class="grid grid-cols-3 gap-2 bg-gray-50 p-4 rounded-2xl border border-gray-100">
+                        @foreach(['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'] as $hari)
+                            <label class="flex items-center gap-2 cursor-pointer group">
+                                <input type="checkbox" name="hari[]" value="{{ $hari }}" class="rounded text-blue-600 focus:ring-blue-500 border-gray-300">
+                                <span class="text-xs font-semibold text-gray-600 group-hover:text-blue-600 transition-colors">{{ $hari }}</span>
+                            </label>
+                        @endforeach
+                    </div>
                 </div>
-                <div>
-                    <label class="text-xs font-bold text-gray-400 uppercase ml-1 tracking-wider">Role Akses</label>
-                    <select name="role" class="w-full border-gray-100 rounded-xl bg-gray-50 p-3 mt-1 font-semibold focus:ring-2 focus:ring-[#2f77dd] outline-none transition">
-                        <option value="petugas">Petugas</option>
-                        <option value="admin">Admin</option>
-                    </select>
+
+                {{-- Jam Tugas --}}
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-[10px] font-black text-gray-400 uppercase mb-2 tracking-widest">Jam Mulai</label>
+                        <input type="time" name="jam_mulai" required class="w-full bg-gray-50 border-none rounded-2xl py-3 px-4 text-sm focus:ring-2 focus:ring-blue-500/20 font-semibold">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-black text-gray-400 uppercase mb-2 tracking-widest">Jam Selesai</label>
+                        <input type="time" name="jam_selesai" required class="w-full bg-gray-50 border-none rounded-2xl py-3 px-4 text-sm focus:ring-2 focus:ring-blue-500/20 font-semibold">
+                    </div>
                 </div>
-                <div class="flex justify-end space-x-3 mt-6">
-                    <button type="button" onclick="closeModal('modalTambah')" class="px-4 py-2 text-gray-400 font-bold hover:text-gray-600 transition">Batal</button>
-                    <button type="submit" class="bg-[#2f77dd] text-white px-8 py-2 rounded-xl font-bold shadow-lg shadow-blue-500/20 hover:bg-[#1e5bb8] transition">Simpan Data</button>
-                </div>
+
+                <button type="submit" class="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold text-xs uppercase tracking-widest shadow-lg shadow-blue-200 transition-all mt-4">
+                    Simpan Petugas
+                </button>
             </form>
         </div>
     </div>
 
-    <div id="modalEdit" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[99] p-4">
-        <div class="bg-white p-8 rounded-3xl w-full max-w-md shadow-2xl border border-gray-100">
-            <div class="flex justify-between items-center mb-6">
-                <h3 class="text-xl font-bold text-[#272b34]">Edit Data Petugas</h3>
-                <span id="labelEditID" class="text-[10px] bg-gray-100 px-2 py-1 rounded text-gray-400 font-mono">ID: -</span>
+    {{-- MODAL EDIT --}}
+<div id="modalEdit" class="hidden fixed inset-0 z-[9999] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-[2.5rem] w-full max-w-md overflow-hidden shadow-2xl">
+        <div class="bg-indigo-600 p-6 text-white flex justify-between items-center">
+            <h3 class="font-bold text-lg">Edit Data Petugas</h3>
+            <button onclick="closeModal('modalEdit')" class="text-white hover:opacity-70 text-2xl">&times;</button>
+        </div>
+        
+        <form id="editForm" method="POST" class="p-8 space-y-4">
+            @csrf @method('PUT')
+            
+            <div>
+                <label class="block text-[10px] font-black text-gray-400 uppercase mb-2 tracking-widest">Nama Lengkap</label>
+                <input type="text" id="edit_name" name="name" required class="w-full bg-gray-50 border-none rounded-2xl py-3 px-4 text-sm focus:ring-2 focus:ring-indigo-500/20 font-semibold">
             </div>
-            <form id="formEdit" method="POST" class="space-y-4" autocomplete="off">
-                @csrf 
-                @method('PUT')
+
+            <div>
+                <label class="block text-[10px] font-black text-gray-400 uppercase mb-2 tracking-widest">Email</label>
+                <input type="email" id="edit_email" name="email" required class="w-full bg-gray-50 border-none rounded-2xl py-3 px-4 text-sm focus:ring-2 focus:ring-indigo-500/20 font-semibold">
+            </div>
+
+            <div>
+                <label class="block text-[10px] font-black text-gray-400 uppercase mb-2 tracking-widest">Role</label>
+                <select id="edit_role" name="role" class="w-full bg-gray-50 border-none rounded-2xl py-3 px-4 text-sm focus:ring-2 focus:ring-indigo-500/20 font-semibold">
+                    <option value="petugas">Petugas</option>
+                    <option value="admin">Admin</option>
+                </select>
+            </div>
+
+            {{-- Hari Tugas (Checkbox) --}}
+            <div>
+                <label class="block text-[10px] font-black text-gray-400 uppercase mb-2 tracking-widest">Hari Tugas</label>
+                <div class="grid grid-cols-3 gap-2 bg-gray-50 p-4 rounded-2xl border border-gray-100">
+                    @foreach(['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'] as $hari)
+                        <label class="flex items-center gap-2 cursor-pointer group">
+                            <input type="checkbox" name="hari[]" value="{{ $hari }}" class="edit-hari-checkbox rounded text-indigo-600 focus:ring-indigo-500 border-gray-300">
+                            <span class="text-xs font-semibold text-gray-600 group-hover:text-indigo-600 transition-colors">{{ $hari }}</span>
+                        </label>
+                    @endforeach
+                </div>
+            </div>
+
+            {{-- Jam Tugas --}}
+            <div class="grid grid-cols-2 gap-4">
                 <div>
-                    <label class="text-xs font-bold text-gray-400 uppercase ml-1 tracking-wider">Nama Lengkap</label>
-                    <input type="text" name="name" id="edit_name" class="w-full border-gray-100 rounded-xl bg-gray-50 p-3 mt-1 focus:ring-2 focus:ring-[#7c4dc2] focus:bg-white outline-none transition" required>
+                    <label class="block text-[10px] font-black text-gray-400 uppercase mb-2 tracking-widest">Jam Mulai</label>
+                    <input type="time" id="edit_jam_mulai" name="jam_mulai" required class="w-full bg-gray-50 border-none rounded-2xl py-3 px-4 text-sm focus:ring-2 focus:ring-indigo-500/20 font-semibold">
                 </div>
                 <div>
-                    <label class="text-xs font-bold text-gray-400 uppercase ml-1 tracking-wider">Email Address</label>
-                    <input type="email" name="email" id="edit_email" class="w-full border-gray-100 rounded-xl bg-gray-50 p-3 mt-1 focus:ring-2 focus:ring-[#7c4dc2] focus:bg-white outline-none transition" required>
+                    <label class="block text-[10px] font-black text-gray-400 uppercase mb-2 tracking-widest">Jam Selesai</label>
+                    <input type="time" id="edit_jam_selesai" name="jam_selesai" required class="w-full bg-gray-50 border-none rounded-2xl py-3 px-4 text-sm focus:ring-2 focus:ring-indigo-500/20 font-semibold">
                 </div>
-                <div>
-                    <label class="text-xs font-bold text-gray-400 uppercase ml-1 tracking-wider">Password Baru</label>
-                    <input type="password" name="password" placeholder="Kosongkan jika tidak ganti" class="w-full border-gray-100 rounded-xl bg-gray-50 p-3 mt-1 focus:ring-2 focus:ring-[#7c4dc2] focus:bg-white outline-none transition" autocomplete="new-password">
+            </div>
+
+            <button type="submit" class="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-bold text-xs uppercase tracking-widest shadow-lg shadow-indigo-100 transition-all mt-4">
+                Update Perubahan
+            </button>
+        </form>
+    </div>
+</div>
+
+    {{-- MODAL DETAIL --}}
+    <div id="modalDetail" class="hidden fixed inset-0 z-[9999] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-[2.5rem] w-full max-w-sm overflow-hidden shadow-2xl">
+            <div class="h-24 bg-gradient-to-r from-blue-600 to-indigo-700"></div>
+            <div class="px-8 pb-8 text-center">
+                <div class="relative flex justify-center">
+                    <div id="detail_avatar" class="-mt-12 w-24 h-24 bg-white rounded-3xl shadow-lg flex items-center justify-center text-3xl font-bold text-blue-600 border-4 border-white">??</div>
                 </div>
-                <div>
-                    <label class="text-xs font-bold text-gray-400 uppercase ml-1 tracking-wider">Role Akses</label>
-                    <select name="role" id="edit_role" class="w-full border-gray-100 rounded-xl bg-gray-50 p-3 mt-1 font-semibold focus:ring-2 focus:ring-[#7c4dc2] outline-none transition">
-                        <option value="petugas">Petugas</option>
-                        <option value="admin">Admin</option>
-                    </select>
+                <h3 id="detail_name" class="text-xl font-bold text-gray-900 mt-4">Nama Petugas</h3>
+                <p id="detail_role" class="text-[10px] font-black uppercase tracking-widest text-blue-500 mt-2 bg-blue-50 inline-block px-3 py-1 rounded-lg">ROLE</p>
+                
+                <div class="mt-8 space-y-3 text-left">
+                    <div class="flex items-center p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                        <i data-lucide="mail" class="w-5 h-5 text-gray-400 mr-4"></i>
+                        <span id="detail_email" class="text-sm text-gray-600 font-semibold truncate"></span>
+                    </div>
+                    <div class="flex items-center p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                        <i data-lucide="calendar" class="w-5 h-5 text-gray-400 mr-4"></i>
+                        <span id="detail_jadwal" class="text-sm text-gray-600 font-semibold"></span>
+                    </div>
                 </div>
-                <div class="flex justify-end space-x-3 mt-6">
-                    <button type="button" onclick="closeModal('modalEdit')" class="px-4 py-2 text-gray-400 font-bold hover:text-gray-600 transition">Batal</button>
-                    <button type="submit" class="bg-[#7c4dc2] text-white px-8 py-2 rounded-xl font-bold shadow-lg shadow-purple-500/20 hover:bg-[#62399e] transition">Update Data</button>
-                </div>
-            </form>
+                <button onclick="closeModal('modalDetail')" class="w-full mt-8 py-4 bg-gray-900 text-white text-sm font-bold rounded-2xl shadow-lg">Tutup Detail</button>
+            </div>
         </div>
     </div>
 
     <script>
+        // Modal Handlers
         function openModal(id) {
             const modal = document.getElementById(id);
-            modal.classList.remove('hidden');
-            modal.classList.add('flex'); // Pastikan pakai flex agar centering jalan
+            if (modal) {
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+            }
         }
 
         function closeModal(id) {
             const modal = document.getElementById(id);
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
-            
-            // Jika menutup modal tambah, reset form-nya biar bersih
-            if(id === 'modalTambah') {
-                modal.querySelector('form').reset();
+            if (modal) {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
             }
         }
 
-        function openEditModal(id, name, email, role) {
-    const form = document.getElementById('formEdit');
-    
-    // Pastikan penulisannya rapat: {{ url('path') }}
-    // Kita pakai tanda kutip biasa saja supaya lebih aman dari error Blade
-    form.action = "{{ url('admin/petugas') }}/" + id; 
+        function showDetail(name, email, role, jadwal) {
+            document.getElementById('detail_name').innerText = name;
+            document.getElementById('detail_email').innerText = email;
+            document.getElementById('detail_role').innerText = role.toUpperCase();
+            document.getElementById('detail_jadwal').innerText = jadwal || 'Belum diatur';
+            document.getElementById('detail_avatar').innerText = name.substring(0, 2).toUpperCase();
+            openModal('modalDetail');
+        }
 
-    document.getElementById('edit_name').value = name;
-    document.getElementById('edit_email').value = email;
-    document.getElementById('edit_role').value = role;
+        function openEditModal(actionUrl, name, email, role, hari, jamMulai, jamSelesai) {
+        const form = document.getElementById('editForm');
+        if (!form) return; // Keamanan tambahan
+        
+        form.action = actionUrl;
+        
+        // Gunakan pengecekan (el) agar jika ID tidak ada, tidak bikin error satu halaman
+        const elName = document.getElementById('edit_name');
+        const elEmail = document.getElementById('edit_email');
+        const elRole = document.getElementById('edit_role');
+        const elJamMulai = document.getElementById('edit_jam_mulai');
+        const elJamSelesai = document.getElementById('edit_jam_selesai');
 
-    openModal('modalEdit');
-}
+        if (elName) elName.value = name;
+        if (elEmail) elEmail.value = email;
+        if (elRole) elRole.value = role;
+        if (elJamMulai) elJamMulai.value = jamMulai || '';
+        if (elJamSelesai) elJamSelesai.value = jamSelesai || '';
 
-        // Close modal on click backdrop
-        window.addEventListener('click', function(e) {
-            if (e.target.id === 'modalTambah') closeModal('modalTambah');
-            if (e.target.id === 'modalEdit') closeModal('modalEdit');
-        });
+        // Bagian Checkbox Hari
+        const checkboxes = document.querySelectorAll('.edit-hari-checkbox');
+        checkboxes.forEach(cb => cb.checked = false);
+
+        if (hari) {
+            const selectedHari = hari.split(','); 
+            checkboxes.forEach(cb => {
+                if (selectedHari.includes(cb.value)) {
+                    cb.checked = true;
+                }
+            });
+        }
+
+        openModal('modalEdit');
+    }
+
+        // Table Search
+        function searchTable() {
+            let input = document.getElementById("searchInput");
+            let filter = input.value.toUpperCase();
+            let table = document.getElementById("petugasTable");
+            let tr = table.getElementsByTagName("tr");
+
+            for (let i = 1; i < tr.length; i++) {
+                let tdName = tr[i].getElementsByTagName("td")[0];
+                if (tdName) {
+                    let txtValue = tdName.textContent || tdName.innerText;
+                    tr[i].style.display = txtValue.toUpperCase().indexOf(filter) > -1 ? "" : "none";
+                }
+            }
+        }
     </script>
 </x-app-layout>
